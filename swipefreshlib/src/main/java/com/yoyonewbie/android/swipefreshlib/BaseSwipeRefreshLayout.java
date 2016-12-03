@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 
 import java.lang.ref.WeakReference;
 
@@ -181,6 +182,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                 move(realMoving);
             }
             break;
+            case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP: {
                 getParent().requestDisallowInterceptTouchEvent(false);
                 if(enablePulldown())
@@ -215,14 +217,14 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         if(BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING == type )
         {
             valueAnimator = ValueAnimator.ofInt(move, headerViewHeight);
-            valueAnimator.setInterpolator(new DecelerateInterpolator(2f));
-            valueAnimator.setDuration(1000);
+            valueAnimator.setInterpolator(new LinearInterpolator());
+            valueAnimator.setDuration(500);
         }
         else if(BackMovingAnimatorListener.TYPE_PULLDOWN_NOT_ENOUNGH_PULL_READY_TO_RELEASE == type ||BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING_OK == type)
         {
             valueAnimator = ValueAnimator.ofInt(move, -headerViewHeight);
             valueAnimator.setInterpolator(new DecelerateInterpolator());
-            valueAnimator.setDuration(1000);
+            valueAnimator.setDuration(1500);
         }
         if(null != valueAnimator)
         {

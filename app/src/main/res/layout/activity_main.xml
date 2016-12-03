@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
+    android:orientation="vertical"
     android:paddingTop="@dimen/activity_vertical_margin">
 
     <com.yoyonewbie.android.swipefreshlib.SwipeItemDisappearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#000000"
-        android:padding="3px"
         >
 
         <TextView
@@ -21,8 +21,73 @@
             android:layout_height="wrap_content"
             android:background="#FF0000"
             android:textColor="#ffffff"
-            android:padding="10px"
+            android:padding="10dp"
             android:text="Hello World!" />
 
     </com.yoyonewbie.android.swipefreshlib.SwipeItemDisappearLayout>
-</RelativeLayout>
+    <com.yoyonewbie.android.swipefreshlib.SwipeHideOrShowHeaderLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:suspendedArea="@+id/lastChildView"
+        >
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#00ff00"
+            >
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                >
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="xxxxx"
+                />
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="xxxxx"
+                    />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:id="@+id/lastChildView"
+                android:background="#00a000"
+
+                >
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="悬浮"
+                    android:padding="20px"
+                    android:textSize="18sp"
+                    />
+            </LinearLayout>
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <ListView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#0a00ee"
+                android:id="@+id/listView"
+                />
+
+        </LinearLayout>
+
+
+    </com.yoyonewbie.android.swipefreshlib.SwipeHideOrShowHeaderLayout>
+
+
+</LinearLayout>
