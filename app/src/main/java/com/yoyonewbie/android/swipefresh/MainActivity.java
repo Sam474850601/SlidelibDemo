@@ -1,9 +1,12 @@
 package com.yoyonewbie.android.swipefresh;
 
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.yoyonewbie.android.lib.swipefreshlib.SwipeHideOrShowHeaderLayout;
+import com.yoyonewbie.android.lib.swipefreshlib.SwipeItemDisappearLayout;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -11,6 +14,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+       SwipeItemDisappearLayout swipeRefreshLayout = (SwipeItemDisappearLayout) findViewById(R.id.swipeDismissItem);
+        swipeRefreshLayout.setOnDismissLinstener(new SwipeItemDisappearLayout.OnDismissLinstener() {
+            @Override
+            public void onDismiss() {
+                Log.e("MainActivity", "dismiss");
+            }
+        });
+
         SwipeHideOrShowHeaderLayout swipeHideOrShowHeaderLayout = (SwipeHideOrShowHeaderLayout) findViewById(R.id.swipeHideOrShowHeaderLayout);
         swipeHideOrShowHeaderLayout.setOnOperatalbeListener(new SwipeHideOrShowHeaderLayout.OnOperatalbeListener() {
             @Override

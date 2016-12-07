@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.yoyonewbie.android.lib.swipefreshlib.SwipeItemDisappearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/swipeDismissItem"
+
+        >
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="try to swipe-left, call the repeat(false) will be real disppear "
+            android:padding="10dp"
+            android:background="#faa000"
+            />
+
+    </com.yoyonewbie.android.lib.swipefreshlib.SwipeItemDisappearLayout>
+    <com.yoyonewbie.android.lib.swipefreshlib.SwipeHideOrShowHeaderLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/swipeHideOrShowHeaderLayout"
+        app:suspendedArea="@+id/suspendedView"
+
+        >
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            >
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="asdfasdfasf"
+                android:background="#fff000"
+                />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="asdfasdfasf"
+                android:background="#fff000"
+                />
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="this is a suspended Child View, try to swipe-down or swipe-up"
+            android:background="#eef0ff"
+            android:id="@+id/suspendedView"
+            />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#fff000"
+            >
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="aaaa"
+                android:background="#fff000"
+                />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="asdfasdfasf"
+                android:background="#fff000"
+                />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="asdfasdfasf"
+                android:background="#fff000"
+                />
+
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="asdfasdfasf"
+                android:background="#fff000"
+                />
+
+        </LinearLayout>
+
+
+    </com.yoyonewbie.android.lib.swipefreshlib.SwipeHideOrShowHeaderLayout>
+</LinearLayout>
