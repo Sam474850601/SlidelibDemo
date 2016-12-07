@@ -122,8 +122,6 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
             convertHeight = convertView.getMeasuredHeight();
         }
         headerViewHeight = headerView.getMeasuredHeight();
-
-        setMeasuredDimension(mWith, mHeight);
     }
 
     @Override
