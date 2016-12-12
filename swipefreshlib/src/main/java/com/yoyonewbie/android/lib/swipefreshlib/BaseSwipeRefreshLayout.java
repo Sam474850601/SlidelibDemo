@@ -363,7 +363,15 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
         @Override
         public void onAnimationStart(Animator animation) {
-
+            BaseSwipeRefreshLayout basePullToRefreshLayout =  wrf.get();
+            if(null== basePullToRefreshLayout)
+                return;
+            if(TYPE_PULLDOWN_FRESHING_OK == type)
+            {
+                basePullToRefreshLayout.mFlag = 0;
+                basePullToRefreshLayout.mFlag |= FLAG_PULL_DOWN_NORMAL;
+                basePullToRefreshLayout.freshingCompletedPulledDownSetting();
+            }
         }
 
         @Override
@@ -384,12 +392,6 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                 basePullToRefreshLayout.mFlag = 0;
                 basePullToRefreshLayout.mFlag |= FLAG_PULL_DOWN_NORMAL;
                 basePullToRefreshLayout.notEnoughPullReadyToReleasePulledDownSetting();
-            }
-            else if(TYPE_PULLDOWN_FRESHING_OK == type)
-            {
-                basePullToRefreshLayout.mFlag = 0;
-                basePullToRefreshLayout.mFlag |= FLAG_PULL_DOWN_NORMAL;
-                basePullToRefreshLayout.freshingCompletedPulledDownSetting();
             }
             wrf.clear();
         }
@@ -455,7 +457,6 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                 {
                     if( 0 == (mFlag&FLAG_PULL_DOWN_RELEASE)  && ((mFlag & FLAG_PULL_DOWN_DRAGGING)!= 0 || (FLAG_PULL_DOWN_READY_RELEASE &mFlag) !=0)&&!_isAnimRunning()   )
                     {
-                        _log("onInterceptTouchEvent", "ACTION_MOVE", "ready");
                         int currentMoveY = (int) (event.getY(mActivePointerId) - downY);
                         int currentMoveX = (int) (event.getX(mActivePointerId) - downX);
                         if (currentMoveY < moveY) {
