@@ -244,50 +244,56 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN: {
-                isChildResumeNoEvent = true;
-                return true;
-            }
-            case MotionEvent.ACTION_MOVE: {
-                if (INVALID_POINTER == mActivePointerId) {
-                    Log.e(LOG_TAG, "Got ACTION_MOVE event but don't have an active pointer id.");
-                    break;
+        try {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN: {
+                    isChildResumeNoEvent = true;
+                    return true;
                 }
-                pointerIndex = event.findPointerIndex(mActivePointerId);
-                if (pointerIndex < 0) {
-                    break;
-                }
-
-
-
-                if(enableSwipeDown && 0 == (mFlag&FLAG_PULL_DOWN_RELEASE)  && ((mFlag & FLAG_PULL_DOWN_DRAGGING)!= 0 || (FLAG_PULL_DOWN_READY_RELEASE &mFlag) !=0)&&!_isAnimRunning()  )
-                {
-                    int currentMoveY = (int) (event.getY(mActivePointerId) - downY);
-                    if (currentMoveY < moveY) {
+                case MotionEvent.ACTION_MOVE: {
+                    if (INVALID_POINTER == mActivePointerId) {
+                        Log.e(LOG_TAG, "Got ACTION_MOVE event but don't have an active pointer id.");
                         break;
                     }
-                    moveY = currentMoveY;
-                    int realMoving = _getRealYMoving(currentMoveY);
-                    move(realMoving);
-                }
-            }
-            break;
-            case MotionEvent.ACTION_CANCEL:
-            case MotionEvent.ACTION_UP: {
-                getParent().requestDisallowInterceptTouchEvent(false);
-                if(0 == (mFlag&FLAG_PULL_DOWN_RELEASE) && ( mFlag & FLAG_PULL_DOWN_READY_RELEASE) !=0  )
-                {
-                    mFlag |= FLAG_PULL_DOWN_RELEASE;
-                    _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING, headerMarinTop);
-                }
-                else if(0 != (mFlag & FLAG_PULL_DOWN_DRAGGING))
-                {
+                    pointerIndex = event.findPointerIndex(mActivePointerId);
+                    if (pointerIndex < 0) {
+                        break;
+                    }
 
-                    _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_NOT_ENOUNGH_PULL_READY_TO_RELEASE, headerMarinTop);
+
+
+                    if(enableSwipeDown && 0 == (mFlag&FLAG_PULL_DOWN_RELEASE)  && ((mFlag & FLAG_PULL_DOWN_DRAGGING)!= 0 || (FLAG_PULL_DOWN_READY_RELEASE &mFlag) !=0)&&!_isAnimRunning()  )
+                    {
+                        int currentMoveY = (int) (event.getY(mActivePointerId) - downY);
+                        if (currentMoveY < moveY) {
+                            break;
+                        }
+                        moveY = currentMoveY;
+                        int realMoving = _getRealYMoving(currentMoveY);
+                        move(realMoving);
+                    }
                 }
+                break;
+                case MotionEvent.ACTION_CANCEL:
+                case MotionEvent.ACTION_UP: {
+                    getParent().requestDisallowInterceptTouchEvent(false);
+                    if(0 == (mFlag&FLAG_PULL_DOWN_RELEASE) && ( mFlag & FLAG_PULL_DOWN_READY_RELEASE) !=0  )
+                    {
+                        mFlag |= FLAG_PULL_DOWN_RELEASE;
+                        _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING, headerMarinTop);
+                    }
+                    else if(0 != (mFlag & FLAG_PULL_DOWN_DRAGGING))
+                    {
+
+                        _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_NOT_ENOUNGH_PULL_READY_TO_RELEASE, headerMarinTop);
+                    }
+                }
+                break;
             }
-            break;
+        }
+        catch (IllegalArgumentException ex)
+        {
+            ex.printStackTrace();
         }
         return super.onTouchEvent(event);
     }

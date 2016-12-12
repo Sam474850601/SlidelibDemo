@@ -88,44 +88,49 @@ public class SwipeItemDisappearLayout extends ViewGroup {
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        switch (ev.getAction())
-        {
-            case MotionEvent.ACTION_DOWN:
+        try {
+            switch (ev.getAction())
             {
-                return true;
-            }
-            case MotionEvent.ACTION_MOVE:
-            {
-
-                if(INVALID_POINTER == mActivePointerId)
+                case MotionEvent.ACTION_DOWN:
                 {
-                    Log.e(LOG_TAG, "Got ACTION_MOVE event but don't have an active pointer id.");
-                    return false;
+                    return true;
                 }
-                pointerIndex = ev.findPointerIndex(mActivePointerId);
-                if (pointerIndex < 0) {
-                    Log.e(LOG_TAG, "Got ACTION_MOVE event but have an invalid active pointer id.");
-                    return false;
-                }
-                scrollX = (int) ( ev.getX(pointerIndex) -downX);
-                if(scrollX>0)
+                case MotionEvent.ACTION_MOVE:
                 {
 
-                    return false;
+                    if(INVALID_POINTER == mActivePointerId)
+                    {
+                        Log.e(LOG_TAG, "Got ACTION_MOVE event but don't have an active pointer id.");
+                        return false;
+                    }
+                    pointerIndex = ev.findPointerIndex(mActivePointerId);
+                    if (pointerIndex < 0) {
+                        Log.e(LOG_TAG, "Got ACTION_MOVE event but have an invalid active pointer id.");
+                        return false;
+                    }
+                    scrollX = (int) ( ev.getX(pointerIndex) -downX);
+                    if(scrollX>0)
+                    {
+
+                        return false;
+                    }
+                    requestLayout();
+                    return true;
                 }
-                requestLayout();
-                return true;
-            }
-            case MotionEvent.ACTION_CANCEL:
-                mActivePointerId = INVALID_POINTER;
-            case MotionEvent.ACTION_UP:
-            {
-                if(scrollX<0)
+                case MotionEvent.ACTION_CANCEL:
+                    mActivePointerId = INVALID_POINTER;
+                case MotionEvent.ACTION_UP:
                 {
-                    int  type = scrollX>-mWith/8?TYPE_RECOVERY:TYPE_DISAPPEAR;
-                    _startScrollXAnim(type, scrollX );
-                }
-            }break;
+                    if(scrollX<0)
+                    {
+                        int  type = scrollX>-mWith/8?TYPE_RECOVERY:TYPE_DISAPPEAR;
+                        _startScrollXAnim(type, scrollX );
+                    }
+                }break;
+            }
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
         }
         return super.onTouchEvent(ev);
     }
