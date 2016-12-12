@@ -156,7 +156,7 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if (_isAnimRunning()) {
-            return true;
+            return super.dispatchTouchEvent(ev);
         }
 
         try {
