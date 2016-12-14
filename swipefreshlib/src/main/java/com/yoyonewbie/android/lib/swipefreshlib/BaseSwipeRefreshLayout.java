@@ -432,7 +432,6 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                     {
                         mFlag &=~FLAG_PULL_DOWN_NORMAL;
                         mFlag |= FLAG_PULL_DOWN_DRAGGING;
-                        getParent().requestDisallowInterceptTouchEvent(true);
                         allowedToReleaseBeforePulledDownSetting();
                         if (allowablePullingRange.isEmpty()) {
                             allowablePullingRange.set(-LIMITE_MOVING_X_INNER_ABS, LIMITE_MOVING_Y_MIN, LIMITE_MOVING_X_INNER_ABS, mHeight);
