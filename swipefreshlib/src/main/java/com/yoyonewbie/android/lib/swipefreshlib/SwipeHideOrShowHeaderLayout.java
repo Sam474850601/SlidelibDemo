@@ -27,7 +27,7 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
     int mWith;
     int mHeight;
     View headerView;
-    View convertView;
+    View mTarget;
     int headerViewHeight;
 
     Rect allowSwpieRect = new Rect();
@@ -80,6 +80,8 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
         } finally {
             typedArray.recycle();
         }
+
+
     }
 
 
@@ -106,7 +108,7 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
         if (2 != getChildCount())
             throw new RuntimeException("There must be 2 childViews(layout)!");
         headerView = getChildAt(0);
-        convertView = getChildAt(1);
+        mTarget = getChildAt(1);
         if (headerView instanceof ViewGroup && suspendedAreaId > 0) {
             View suspendedView = headerView.findViewById(suspendedAreaId);
             suspendedAreaHeight = suspendedView.getMeasuredHeight();
@@ -114,14 +116,15 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
         int childViewWidthMeasureSpec = MeasureSpec.makeMeasureSpec(mWith - paddingLeft - paddingRight, MeasureSpec.EXACTLY);
         int childViewHeightMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
         measureChild(headerView, childViewWidthMeasureSpec, childViewHeightMeasureSpec);
-        measureChild(convertView, childViewWidthMeasureSpec, childViewHeightMeasureSpec);
-        int convertHeight = convertView.getMeasuredHeight();
-        if (0 == convertHeight) {
-            childViewHeightMeasureSpec = MeasureSpec.makeMeasureSpec(mHeight - paddingTop - paddingBottom, MeasureSpec.EXACTLY);
-            measureChild(convertView, childViewWidthMeasureSpec, childViewHeightMeasureSpec);
-            convertHeight = convertView.getMeasuredHeight();
-        }
         headerViewHeight = headerView.getMeasuredHeight();
+        measureChild(mTarget, childViewWidthMeasureSpec, childViewHeightMeasureSpec);
+        int convertHeight = mTarget.getMeasuredHeight();
+
+        if (0 == convertHeight) {
+            childViewHeightMeasureSpec = MeasureSpec.makeMeasureSpec(mHeight - paddingTop - paddingBottom-suspendedAreaHeight, MeasureSpec.EXACTLY);
+            measureChild(mTarget, childViewWidthMeasureSpec, childViewHeightMeasureSpec);
+        }
+
     }
 
     @Override
@@ -132,7 +135,7 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
         int paddingBottom = getPaddingBottom();
         int headerShowHeight = headerViewHeight + paddingTop + scrollY;
         headerView.layout(paddingLeft, paddingTop + scrollY, headerView.getMeasuredWidth() - paddingRight, headerShowHeight);
-        convertView.layout(paddingLeft, headerShowHeight, convertView.getMeasuredWidth() - paddingRight, mHeight - paddingBottom);
+        mTarget.layout(paddingLeft, headerShowHeight, mTarget.getMeasuredWidth() - paddingRight, mHeight - paddingBottom);
     }
 
 
