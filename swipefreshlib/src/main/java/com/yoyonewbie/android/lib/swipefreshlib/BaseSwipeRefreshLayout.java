@@ -530,12 +530,20 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
     //With the code to trigger an automatic swipe animation, to refresh
     public void autoSwipeDownFresh()
     {
-        if(_isAnimRunning())
+        if(_isAnimRunning()||0!=(mFlag&FLAG_PULL_DOWN_RELEASE))
             return;
         mFlag = 0;
         mFlag |= FLAG_PULL_DOWN_READY_RELEASE;
         mFlag |= FLAG_PULL_DOWN_RELEASE;
+        freshingPulledDownSetting();
         _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING, 0);
+    }
+
+    //the swipelayout  is touching or its anim running
+    public boolean isRunning()
+    {
+        return _isAnimRunning()||0!=(mFlag&FLAG_PULL_DOWN_DRAGGING)||0!=(mFlag&FLAG_PULL_DOWN_READY_RELEASE)||
+                0!=(mFlag&FLAG_PULL_DOWN_RELEASE);
     }
 
 }
