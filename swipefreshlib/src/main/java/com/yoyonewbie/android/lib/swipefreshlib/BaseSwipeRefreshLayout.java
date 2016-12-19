@@ -5,6 +5,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Rect;
 import android.os.Build;
+import android.os.Parcelable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.AttributeSet;
@@ -192,7 +193,6 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                 getMeasuredWidth() - getPaddingLeft() - getPaddingRight(),
                 MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(
                 getMeasuredHeight() - getPaddingTop() - getPaddingBottom(), MeasureSpec.EXACTLY));
-
     }
 
 
@@ -576,6 +576,36 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                 0!=(mFlag&FLAG_PULL_DOWN_RELEASE);
     }
 
-    
+
+    /**
+     * recover fresh state, and show the header
+     */
+    public void recoveryFreshState()
+    {
+        this.post(new Runnable() {
+            @Override
+            public void run() {
+                int headerViewWithMeasureSpec = MeasureSpec.makeMeasureSpec(mWith-getPaddingLeft()-getPaddingRight(), MeasureSpec.EXACTLY);
+                int headerViewHeightMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+                headerView.measure(headerViewWithMeasureSpec, headerViewHeightMeasureSpec);
+                int headerViewHeight = headerView.getMeasuredHeight();
+                _move(headerViewHeight);
+                freshingPulledDownSetting();
+            }
+        });
+    }
+
+
+    /**
+     * whether it is freshing
+     * @return
+     */
+    public boolean isRefreshing()
+    {
+        return 0!=(mFlag&FLAG_PULL_DOWN_RELEASE);
+    }
+
+
+
 
 }
