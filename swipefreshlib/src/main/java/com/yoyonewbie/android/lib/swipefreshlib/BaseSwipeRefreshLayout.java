@@ -527,11 +527,24 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
     }
 
 
-    //With the code to trigger an automatic swipe animation, to refresh
+    /**
+     * Automatically enter the refresh state
+     */
     public void autoSwipeDownFresh()
     {
         if(_isAnimRunning()||0!=(mFlag&FLAG_PULL_DOWN_RELEASE))
             return;
+       this.post(new Runnable() {
+           @Override
+           public void run() {
+               _autoSwipeDownFresh();
+           }
+       });
+    }
+
+
+    private void _autoSwipeDownFresh()
+    {
         mFlag = 0;
         mFlag |= FLAG_PULL_DOWN_READY_RELEASE;
         mFlag |= FLAG_PULL_DOWN_RELEASE;
@@ -539,11 +552,30 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING, 0);
     }
 
-    //the swipelayout  is touching or its anim running
+    /**
+     * Automatically enter the refresh state, you can set the delay time
+     */
+    public void autoSwipeDownFresh(long delayedTime)
+    {
+        if(_isAnimRunning()||0!=(mFlag&FLAG_PULL_DOWN_RELEASE))
+            return;
+        this.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                _autoSwipeDownFresh();
+            }
+        }, delayedTime);
+    }
+
+    /**
+     * the swipelayout  is touching or its anim running
+     */
     public boolean isRunning()
     {
         return _isAnimRunning()||0!=(mFlag&FLAG_PULL_DOWN_DRAGGING)||0!=(mFlag&FLAG_PULL_DOWN_READY_RELEASE)||
                 0!=(mFlag&FLAG_PULL_DOWN_RELEASE);
     }
+
+    
 
 }
