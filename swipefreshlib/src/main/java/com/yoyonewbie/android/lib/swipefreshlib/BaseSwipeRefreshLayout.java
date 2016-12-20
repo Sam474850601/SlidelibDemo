@@ -59,7 +59,21 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         boolean enableSwipeDown();
     }
 
-
+    @Override
+    protected int getChildDrawingOrder(int childCount, int i) {
+        if (mHeaderViewIndex < 0) {
+            return i;
+        } else if (i == childCount - 1) {
+            // Draw the selected child last
+            return mHeaderViewIndex;
+        } else if (i >= mHeaderViewIndex) {
+            // Move the children after the selected child earlier one
+            return i + 1;
+        } else {
+            // Keep the children before the selected child the same
+            return i;
+        }
+    }
 
     /**
      * This method will be called when the dropdown does not reach the refresh before
@@ -119,6 +133,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
     protected void init(Context context)
     {
+        setChildrenDrawingOrderEnabled(true);
         headerView = getHeaderView(context);
         addView(headerView);
         mFlag |= FLAG_PULL_DOWN_NORMAL;
@@ -168,11 +183,23 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
     private int mFlag = 0;
 
+
+    public final static int GRAVITY_TOP = 1;
+
+    public final static int GRAVITY_INNER = 0;
+
+    private int gravity = GRAVITY_INNER;
+
     //Allow gestures to drag intervals
     Rect allowablePullingRange = new Rect();
 
 
     private ValueAnimator valueAnimator;
+
+
+
+
+    private  int mHeaderViewIndex=-1;
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -184,15 +211,24 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         mHeight = getMeasuredHeight();
         mTarget = getChildAt(1);
 
+        mTarget.measure(MeasureSpec.makeMeasureSpec(
+                getMeasuredWidth() - getPaddingLeft() - getPaddingRight(),
+                MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(
+                getMeasuredHeight() - getPaddingTop() - getPaddingBottom(), MeasureSpec.EXACTLY));
+
         int headerViewWithMeasureSpec = MeasureSpec.makeMeasureSpec(mWith-getPaddingLeft()-getPaddingRight(), MeasureSpec.EXACTLY);
         int headerViewHeightMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
         headerView.measure(headerViewWithMeasureSpec, headerViewHeightMeasureSpec);
         headerViewHeight = headerView.getMeasuredHeight();
 
-        mTarget.measure(MeasureSpec.makeMeasureSpec(
-                getMeasuredWidth() - getPaddingLeft() - getPaddingRight(),
-                MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(
-                getMeasuredHeight() - getPaddingTop() - getPaddingBottom(), MeasureSpec.EXACTLY));
+        mHeaderViewIndex = -1;
+        // Get the index of the circleview.
+        for (int index = 0; index < getChildCount(); index++) {
+            if (getChildAt(index) == headerView) {
+                mHeaderViewIndex = index;
+                break;
+            }
+        }
     }
 
 
@@ -204,8 +240,20 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         int paddingBottom = getPaddingBottom();
         int magrinTop = -headerViewHeight + paddingTop + headerMarinTop;
         int headerBottom = paddingTop + headerMarinTop + headerViewHeight - headerViewHeight;
-        headerView.layout(paddingLeft, magrinTop, mWith - paddingRight, headerBottom);
-        mTarget.layout(paddingLeft, headerBottom, mWith - paddingRight, mHeight - paddingBottom-paddingTop);
+        if(GRAVITY_INNER ==gravity)
+        {
+            mTarget.layout(paddingLeft, headerBottom, mWith - paddingRight, mHeight - paddingBottom-paddingTop);
+            headerView.layout(paddingLeft, magrinTop, mWith - paddingRight, headerBottom);
+        }
+        else if(GRAVITY_TOP ==gravity)
+        {
+            mTarget.layout(paddingLeft, paddingTop, mWith - paddingRight, mHeight - paddingBottom-paddingTop);
+            headerView.layout(paddingLeft, magrinTop, mWith - paddingRight, headerBottom);
+        }
+        else
+        {
+            throw new RuntimeException("you must provide  a valid  value that is gravity");
+        }
     }
 
 
@@ -415,74 +463,80 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
     final static  int INVALID_POINTER = -1;
     @Override
     public boolean onInterceptTouchEvent(MotionEvent event) {
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN: {
-                mActivePointerId = event.getPointerId(0);
-                pointerIndex = event.findPointerIndex(mActivePointerId);
-                downY = (int) event.getY(pointerIndex);
-                downX = (int) event.getX(mActivePointerId);
-                if(enableSwipeDown = enableSwipedown())
-                {
-                    //清除之前保存的滑动记录
-                    moveY = 0;
-                    downY = (int) event.getY(mActivePointerId);
+        try {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN: {
+                    mActivePointerId = event.getPointerId(0);
+                    pointerIndex = event.findPointerIndex(mActivePointerId);
+                    downY = (int) event.getY(pointerIndex);
                     downX = (int) event.getX(mActivePointerId);
-                    boolean isNormal = (mFlag & FLAG_PULL_DOWN_NORMAL) !=0;
-                    if( isNormal&&enableSwipeDown&&!_isAnimRunning())
+                    if(enableSwipeDown = enableSwipedown())
                     {
-                        mFlag &=~FLAG_PULL_DOWN_NORMAL;
-                        mFlag |= FLAG_PULL_DOWN_DRAGGING;
-                        allowedToReleaseBeforePulledDownSetting();
-                        if (allowablePullingRange.isEmpty()) {
-                            allowablePullingRange.set(-LIMITE_MOVING_X_INNER_ABS, LIMITE_MOVING_Y_MIN, LIMITE_MOVING_X_INNER_ABS, mHeight);
-                        }
-                    }
-                }
-
-                return false;
-            }
-            case MotionEvent.ACTION_MOVE: {
-
-                if (INVALID_POINTER == mActivePointerId) {
-                    Log.e(LOG_TAG, "Got ACTION_MOVE event but don't have an active pointer id.");
-                    break;
-                }
-                pointerIndex = event.findPointerIndex(mActivePointerId);
-                if (pointerIndex < 0) {
-                    break;
-                }
-
-                if(enableSwipeDown)
-                {
-                    if( 0 == (mFlag&FLAG_PULL_DOWN_RELEASE)  && ((mFlag & FLAG_PULL_DOWN_DRAGGING)!= 0 || (FLAG_PULL_DOWN_READY_RELEASE &mFlag) !=0)&&!_isAnimRunning()   )
-                    {
-                        int currentMoveY = (int) (event.getY(mActivePointerId) - downY);
-                        int currentMoveX = (int) (event.getX(mActivePointerId) - downX);
-                        if (currentMoveY < moveY) {
-                            break;
-                        }
-                        moveY = currentMoveY;
-                        if (moveY>LIMITE_MOVING_Y_MIN) {
-                            if(_whetherInAllowablePullingRange(currentMoveX, currentMoveY))
-                            {
-                                return true;
+                        //清除之前保存的滑动记录
+                        moveY = 0;
+                        downY = (int) event.getY(mActivePointerId);
+                        downX = (int) event.getX(mActivePointerId);
+                        boolean isNormal = (mFlag & FLAG_PULL_DOWN_NORMAL) !=0;
+                        if( isNormal&&enableSwipeDown&&!_isAnimRunning())
+                        {
+                            mFlag &=~FLAG_PULL_DOWN_NORMAL;
+                            mFlag |= FLAG_PULL_DOWN_DRAGGING;
+                            allowedToReleaseBeforePulledDownSetting();
+                            if (allowablePullingRange.isEmpty()) {
+                                allowablePullingRange.set(-LIMITE_MOVING_X_INNER_ABS, LIMITE_MOVING_Y_MIN, LIMITE_MOVING_X_INNER_ABS, mHeight);
                             }
                         }
                     }
-                }
-            }break;
-            case MotionEvent.ACTION_UP: {
 
-                boolean disallowInterceptTouchEvent = moveY > 0 && !_isAnimRunning();
-                return disallowInterceptTouchEvent && enableSwipeDown;
+                    return false;
+                }
+                case MotionEvent.ACTION_MOVE: {
+
+                    if (INVALID_POINTER == mActivePointerId) {
+                        Log.e(LOG_TAG, "Got ACTION_MOVE event but don't have an active pointer id.");
+                        break;
+                    }
+                    pointerIndex = event.findPointerIndex(mActivePointerId);
+                    if (pointerIndex < 0) {
+                        break;
+                    }
+
+                    if(enableSwipeDown)
+                    {
+                        if( 0 == (mFlag&FLAG_PULL_DOWN_RELEASE)  && ((mFlag & FLAG_PULL_DOWN_DRAGGING)!= 0 || (FLAG_PULL_DOWN_READY_RELEASE &mFlag) !=0)&&!_isAnimRunning()   )
+                        {
+                            int currentMoveY = (int) (event.getY(mActivePointerId) - downY);
+                            int currentMoveX = (int) (event.getX(mActivePointerId) - downX);
+                            if (currentMoveY < moveY) {
+                                break;
+                            }
+                            moveY = currentMoveY;
+                            if (moveY>LIMITE_MOVING_Y_MIN) {
+                                if(_whetherInAllowablePullingRange(currentMoveX, currentMoveY))
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }break;
+                case MotionEvent.ACTION_UP: {
+
+                    boolean disallowInterceptTouchEvent = moveY > 0 && !_isAnimRunning();
+                    return disallowInterceptTouchEvent && enableSwipeDown;
+                }
+                case MotionEvent.ACTION_CANCEL:
+                {
+                    mActivePointerId = INVALID_POINTER;
+                }
+
             }
-            case MotionEvent.ACTION_CANCEL:
-            {
-                mActivePointerId = INVALID_POINTER;
-            }
+            return super.onInterceptTouchEvent(event);
+        }catch (IllegalArgumentException ex)
+        {
 
         }
-        return super.onInterceptTouchEvent(event);
+        return false;
     }
 
     public void freshingCompleted()
