@@ -198,6 +198,11 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
 
 
+    public void setGravity(int gravity)
+    {
+        this.gravity = gravity;
+    }
+
 
     private  int mHeaderViewIndex=-1;
 
