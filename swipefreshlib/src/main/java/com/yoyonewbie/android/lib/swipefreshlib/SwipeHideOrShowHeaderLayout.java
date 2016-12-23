@@ -299,13 +299,13 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
         valueAnimator.addUpdateListener(updateListener);
         if(isshowAnim)
         {
-            valueAnimator.setDuration(800);
+            valueAnimator.setDuration(500);
             valueAnimator.setInterpolator(new DecelerateInterpolator(2f));
         }
         else
         {
-            valueAnimator.setDuration(500);
-            valueAnimator.setInterpolator(new OvershootInterpolator(0.8f));
+            valueAnimator.setInterpolator(new OvershootInterpolator(1.5f));
+            valueAnimator.setDuration(300);
         }
 
         valueAnimator.addListener(new Animator.AnimatorListener() {
