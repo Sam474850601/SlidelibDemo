@@ -359,10 +359,14 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                             break;
                         }
                         moveY2 = currentMoveY;
+                        Log.e("isChildResumeNoEvent",isChildResumeNoEvent+" isChildResumeNoEvent" );
+                        if(!isChildResumeNoEvent)
+                            moveY2= moveY2+LIMITE_MOVING_Y_MIN;
                         if(!mScroller.isFinished())
                             mScroller.abortAnimation();
                         if(moveY2<-500)
                             moveY2= -500;
+
                         scrollTo(0, -moveY2);
                         invalidate();
                     }
@@ -535,6 +539,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         try {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN: {
+                    isChildResumeNoEvent= false;
                     mActivePointerId = event.getPointerId(0);
                     pointerIndex = event.findPointerIndex(mActivePointerId);
                     downY = (int) event.getY(mActivePointerId);
