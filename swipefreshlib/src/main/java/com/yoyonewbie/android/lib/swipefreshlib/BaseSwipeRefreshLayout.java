@@ -20,6 +20,7 @@ import android.view.animation.LinearInterpolator;
 import android.widget.Scroller;
 
 import java.lang.ref.WeakReference;
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -93,6 +94,13 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
      */
     protected abstract void allowedToReleaseBeforePulledDownSetting();
 
+
+    /**
+     * This method will be called when moving before allow to fresh
+     * @param persent
+     */
+    protected abstract void allowedToReleaseBeforePulledDownSetting(float persent);
+
     /**
      * This method will be called  in each release of the gesture and did not reach the refresh time
      */
@@ -105,6 +113,8 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
      * @return
      */
     protected abstract void readyToReleasePulledDownSetting();
+
+
 
 
     /**
@@ -193,6 +203,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
     public final static int FLAG_PULL_DOWN_RELEASE = 0x10;
 
+    public  final static  int FLAG_FRESHING_NO_COMPLETION = 0x40;
 
 
     private int mFlag = 0;
@@ -278,31 +289,53 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         }
     }
 
-    private void scroll(int scroll)
-    {
-        if(scroll<-headerViewHeight)
-            scroll= scroll;
-        scrollTo(0, scroll);
-    }
 
 
+
+
+
+    boolean allowMovingSetting= true;
 
     protected   void move(int move) {
         //Limit the maximum amount of glide
         int pullMovingHeightOfLimite = mHeight / 6;
         if (move < 0)
             return;
+        move = (int)(move*0.5f);
         if(move>pullMovingHeightOfLimite)
             move = pullMovingHeightOfLimite;
         //The actual animation moves the maximum value
         int maxMoving = headerViewHeight * 2;
-        headerMarinTop = move * maxMoving / pullMovingHeightOfLimite;
+       // headerMarinTop = move * maxMoving / pullMovingHeightOfLimite;
+        headerMarinTop =  move;
         if(headerMarinTop >=headerViewHeight && 0 != (mFlag&FLAG_PULL_DOWN_DRAGGING))
         {
             mFlag &=~FLAG_PULL_DOWN_DRAGGING;
             mFlag |= FLAG_PULL_DOWN_READY_RELEASE;
             readyToReleasePulledDownSetting();
         }
+
+        int persentMoving = headerMarinTop;
+
+        if(persentMoving>=headerViewHeight )
+        {
+            persentMoving = headerViewHeight;
+        }
+
+
+        if(allowMovingSetting)
+        {
+            BigDecimal moveDecimal  = new BigDecimal(persentMoving);
+            BigDecimal maxDecimal  = new BigDecimal(headerViewHeight);
+            BigDecimal resultDecimal =  moveDecimal.divide(maxDecimal,2, BigDecimal.ROUND_HALF_UP);
+            allowedToReleaseBeforePulledDownSetting(resultDecimal.floatValue());
+        }
+
+        if(persentMoving>=headerViewHeight)
+        {
+            allowMovingSetting = false;
+        }
+
         _move(headerMarinTop);
     }
 
@@ -320,12 +353,41 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
     private boolean isChildResumeNoEvent;
 
+
+    float dispatchDownY;
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if(0 == (mFlag&FLAG_FRESHING_NO_COMPLETION)&&0!=(mFlag&FLAG_PULL_DOWN_RELEASE))
+        {
+            switch (ev.getAction())
+            {
+                case MotionEvent.ACTION_DOWN:
+                {
+                    dispatchDownY = ev.getY();
+
+                }break;
+                case MotionEvent.ACTION_MOVE:
+                {
+                    if(dispatchDownY-ev.getY()>0)
+                    {
+                        this.mFlag |= FLAG_FRESHING_NO_COMPLETION;
+                        _startMovingAnim(BackMovingAnimatorListener.TYPE_FRESHING_NO_COMPLETION, headerViewHeight);
+                    }
+                }break;
+
+            }
+        }
+        return super.dispatchTouchEvent(ev);
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         try {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN: {
                     isChildResumeNoEvent = true;
+                    allowMovingSetting = true;
                     return !_isAnimRunning();
                 }
                 case MotionEvent.ACTION_MOVE: {
@@ -342,7 +404,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
                     if(currentMoveY>0 && mScroller.isFinished())
                     {
-                        if(enableSwipeDown && 0 == (mFlag&FLAG_PULL_DOWN_RELEASE)  && ((mFlag & FLAG_PULL_DOWN_DRAGGING)!= 0 || (FLAG_PULL_DOWN_READY_RELEASE &mFlag) !=0)&&!_isAnimRunning()  )
+                         if( (enableSwipeDown && 0 != (mFlag&FLAG_FRESHING_NO_COMPLETION) &&!_isAnimRunning())||(enableSwipeDown && 0 == (mFlag&FLAG_PULL_DOWN_RELEASE)  && ((mFlag & FLAG_PULL_DOWN_DRAGGING)!= 0 || (FLAG_PULL_DOWN_READY_RELEASE &mFlag) !=0)&&!_isAnimRunning()  ))
                         {
 
                             if (currentMoveY < moveY) {
@@ -385,17 +447,22 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
                     if(realMoving>0)
                     {
-                        if(0 == (mFlag&FLAG_PULL_DOWN_RELEASE) && ( mFlag & FLAG_PULL_DOWN_READY_RELEASE) !=0  )
+                        if(0 != (mFlag&FLAG_FRESHING_NO_COMPLETION) )
+                        {
+                            _startMovingAnim(BackMovingAnimatorListener.TYPE_FRESHING_NO_COMPLETION, headerMarinTop);
+                        }
+                       else   if( 0 == (mFlag&FLAG_PULL_DOWN_RELEASE) && ( mFlag & FLAG_PULL_DOWN_READY_RELEASE) !=0  )
                         {
 
                             mFlag |= FLAG_PULL_DOWN_RELEASE;
                             _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING, headerMarinTop);
                         }
-                        else if(0 != (mFlag & FLAG_PULL_DOWN_DRAGGING))
+                        else
                         {
 
                             _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_NOT_ENOUNGH_PULL_READY_TO_RELEASE, headerMarinTop);
                         }
+
                     }
 
                 }
@@ -430,15 +497,15 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
             valueAnimator.cancel();
         if(BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING == type )
         {
-            valueAnimator = ValueAnimator.ofInt(move, headerViewHeight);
-            valueAnimator.setInterpolator(new LinearInterpolator());
-            valueAnimator.setDuration(500);
-        }
-        else if(BackMovingAnimatorListener.TYPE_PULLDOWN_NOT_ENOUNGH_PULL_READY_TO_RELEASE == type || BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING_OK == type)
+        valueAnimator = ValueAnimator.ofInt(move, headerViewHeight);
+        valueAnimator.setInterpolator(new LinearInterpolator());
+        valueAnimator.setDuration(500);
+    }
+        else if(BackMovingAnimatorListener.TYPE_FRESHING_NO_COMPLETION == type ||BackMovingAnimatorListener.TYPE_PULLDOWN_NOT_ENOUNGH_PULL_READY_TO_RELEASE == type || BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING_OK == type)
         {
             valueAnimator = ValueAnimator.ofInt(move, 0);
             valueAnimator.setInterpolator(new DecelerateInterpolator());
-            valueAnimator.setDuration(1000);
+            valueAnimator.setDuration(200);
         }
         if(null != valueAnimator)
         {
@@ -473,6 +540,8 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         static final int TYPE_PULLDOWN_NOT_ENOUNGH_PULL_READY_TO_RELEASE = 2;
 
         static final int TYPE_PULLDOWN_FRESHING_OK = 3;
+
+        static final int TYPE_FRESHING_NO_COMPLETION = 4;
 
         int type;
         WeakReference<BaseSwipeRefreshLayout> wrf;
@@ -539,6 +608,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         try {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN: {
+                    allowMovingSetting = true;
                     isChildResumeNoEvent= false;
                     mActivePointerId = event.getPointerId(0);
                     pointerIndex = event.findPointerIndex(mActivePointerId);
@@ -559,7 +629,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                             allowedToReleaseBeforePulledDownSetting();
                         }
                     }
-                    return _isAnimRunning();
+                   break;
                 }
                 case MotionEvent.ACTION_MOVE: {
 
@@ -582,10 +652,10 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                     {
                         if(enableSwipeDown && currentMoveY>0)
                         {
+                            if(0 != (mFlag&FLAG_FRESHING_NO_COMPLETION))
+                                return _whetherInAllowablePullingRange(currentMoveX, currentMoveY);
                             if( 0 == (mFlag&FLAG_PULL_DOWN_RELEASE)  && ((mFlag & FLAG_PULL_DOWN_DRAGGING)!= 0 || (FLAG_PULL_DOWN_READY_RELEASE &mFlag) !=0)&&!_isAnimRunning()   )
                             {
-
-
                                 if (currentMoveY < moveY) {
                                     break;
                                 }
@@ -624,8 +694,19 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
     {
         if((mFlag & FLAG_PULL_DOWN_RELEASE) != 0)
         {
+            if(0 ==( mFlag&FLAG_FRESHING_NO_COMPLETION ))
+            {
+                _startMovingAnim( BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING_OK, headerViewHeight);
+            }
+            else
+            {
+                mFlag = 0;
+                mFlag |= FLAG_PULL_DOWN_NORMAL;
+                if(headerMarinTop>0)
+                    _startMovingAnim( BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING_OK, headerMarinTop);
+                freshingCompletedPulledDownSetting();
+            }
 
-            _startMovingAnim( BackMovingAnimatorListener.TYPE_PULLDOWN_FRESHING_OK, headerViewHeight);
         }
     }
 
