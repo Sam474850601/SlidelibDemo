@@ -14,7 +14,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="try to swipe-left, call the repeat(false) will be real disppear "
+            android:text="try to swipe to  the  left, call the repeat(false) will be  not appeared again "
             android:padding="10dp"
             android:background="#faa000"
             />

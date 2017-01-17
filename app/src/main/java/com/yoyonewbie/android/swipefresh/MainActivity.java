@@ -16,13 +16,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
        SwipeItemDisappearLayout swipeRefreshLayout = (SwipeItemDisappearLayout) findViewById(R.id.swipeDismissItem);
-        swipeRefreshLayout.setOnDismissLinstener(new SwipeItemDisappearLayout.OnDismissLinstener() {
+        swipeRefreshLayout.setRepeat(true);
+        swipeRefreshLayout.setOnDisapperListener(new SwipeItemDisappearLayout.OnDisapperListener() {
             @Override
-            public void onDismiss() {
-                Log.e("MainActivity", "dismiss");
+            public void onDisppeared() {
+
             }
         });
-
         SwipeHideOrShowHeaderLayout swipeHideOrShowHeaderLayout = (SwipeHideOrShowHeaderLayout) findViewById(R.id.swipeHideOrShowHeaderLayout);
         swipeHideOrShowHeaderLayout.setOnOperatalbeListener(new SwipeHideOrShowHeaderLayout.OnOperatalbeListener() {
             @Override
