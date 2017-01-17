@@ -381,6 +381,8 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         return super.dispatchTouchEvent(ev);
     }
 
+    boolean scrollerIsFinished = true;
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         try {
@@ -388,6 +390,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                 case MotionEvent.ACTION_DOWN: {
                     isChildResumeNoEvent = true;
                     allowMovingSetting = true;
+                    scrollerIsFinished = mScroller.isFinished();
                     return !_isAnimRunning();
                 }
                 case MotionEvent.ACTION_MOVE: {
@@ -402,7 +405,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
                     int currentMoveY = (int) (event.getY(mActivePointerId) - downY);
 
-                    if(currentMoveY>0 && mScroller.isFinished())
+                    if(currentMoveY>0 && scrollerIsFinished)
                     {
                          if( (enableSwipeDown && 0 != (mFlag&FLAG_FRESHING_NO_COMPLETION) &&!_isAnimRunning())||(enableSwipeDown && 0 == (mFlag&FLAG_PULL_DOWN_RELEASE)  && ((mFlag & FLAG_PULL_DOWN_DRAGGING)!= 0 || (FLAG_PULL_DOWN_READY_RELEASE &mFlag) !=0)&&!_isAnimRunning()  ))
                         {
@@ -608,6 +611,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         try {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN: {
+
                     allowMovingSetting = true;
                     isChildResumeNoEvent= false;
                     mActivePointerId = event.getPointerId(0);
@@ -644,7 +648,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
                     int currentMoveY = (int) (event.getY(mActivePointerId) - downY);
                     int currentMoveX = (int) (event.getX(mActivePointerId) - downX);
-                    if(currentMoveY<0&&enableSwipeUp()&&!_isAnimRunning())
+                        if(currentMoveY<0&&enableSwipeUp()&&!_isAnimRunning())
                     {
                         return _whetherInAllowablePullingRange(currentMoveX, -currentMoveY);
                     }
@@ -661,7 +665,12 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                                 }
                                 moveY = currentMoveY;
                                 if (moveY>LIMITE_MOVING_Y_MIN) {
-                                    return _whetherInAllowablePullingRange(currentMoveX, currentMoveY);
+                                   boolean isAllowSwipeDown =  _whetherInAllowablePullingRange(currentMoveX, currentMoveY);
+                                    if(isAllowSwipeDown)
+                                    {
+                                        scrollerIsFinished = mScroller.isFinished();
+                                    }
+                                    return isAllowSwipeDown;
                                 }
                             }
                         }
