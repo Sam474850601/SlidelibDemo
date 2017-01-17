@@ -19,6 +19,11 @@ public class MainActivity extends AppCompatActivity {
         swipeRefreshLayout.setRepeat(true);
         swipeRefreshLayout.setOnDisapperListener(new SwipeItemDisappearLayout.OnDisapperListener() {
             @Override
+            public void onStarted() {
+
+            }
+
+            @Override
             public void onDisppeared() {
 
             }

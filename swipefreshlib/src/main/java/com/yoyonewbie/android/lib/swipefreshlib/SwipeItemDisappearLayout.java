@@ -12,7 +12,7 @@ import android.view.ViewGroup;
 import android.widget.Scroller;
 
 /**
- * A layout that can be removed  when user swipe-left to operate it
+ * A layout that can be removed  when user swipe-left to operation
  * @author Sam
  */
 
@@ -45,6 +45,7 @@ public class SwipeItemDisappearLayout extends ViewGroup {
         super(context, attrs);
         mScroller = new Scroller(context);
     }
+
 
 
 
@@ -144,28 +145,6 @@ public class SwipeItemDisappearLayout extends ViewGroup {
     }
 
 
-    @Override
-    public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if(isRunning())
-            return false;
-        switch (ev.getAction())
-        {
-            case MotionEvent.ACTION_DOWN:
-            {
-                mActivePointerId = ev.getPointerId(0);
-                moveValue = 0;
-            }
-            case MotionEvent.ACTION_MOVE:
-                if(STATE_DISAPPEAR == state)
-                    return false ;
-                break;
-            case MotionEvent.ACTION_UP:break;
-            case MotionEvent.ACTION_CANCEL:
-                mActivePointerId = INVALID_POINTER;
-        }
-        return true;
-    }
-
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
@@ -182,7 +161,10 @@ public class SwipeItemDisappearLayout extends ViewGroup {
                 }
                 mInitialDownX = ev.getX(pointerIndex);
                 moveValue = 0;
-            }break;
+                super.onTouchEvent(ev);
+                getParent().requestDisallowInterceptTouchEvent(true);
+                return true;
+            }
             case MotionEvent.ACTION_MOVE:
             {
                 if(STATE_DISAPPEAR == state)
@@ -207,7 +189,10 @@ public class SwipeItemDisappearLayout extends ViewGroup {
                         scrollTo((int) -moveValue, 0);
                     }
                 }
-            }break;
+                return true;
+            }
+            case MotionEvent.ACTION_CANCEL:
+                mActivePointerId = INVALID_POINTER;
             case MotionEvent.ACTION_UP:
             {
                 if(isRunning())
@@ -215,12 +200,14 @@ public class SwipeItemDisappearLayout extends ViewGroup {
                 Log.e("SwipeDisappearLayout", "ACTION_UP");
 
                 Log.e("SwipeDisappearLayout", "moveValue:"+moveValue);
-                if(moveValue<-getMeasuredWidth()/8f)
+                if(moveValue<-getMeasuredWidth()/10f)
                 {
 
                     Log.e("SwipeDisappearLayout", "disappear");
                     state = STATE_DISAPPEAR;
-                    mScroller.startScroll(getScrollX(),0 , (int) (getMeasuredWidth()-Math.abs(moveValue)), 0, 600);
+                    if(null != onDisapperListener)
+                        onDisapperListener.onStarted();
+                    mScroller.startScroll(getScrollX(),0 , (int) (getMeasuredWidth()-Math.abs(moveValue)), 0, 1500);
                     invalidate();
                 }
                 else if(moveValue<0)
@@ -228,15 +215,14 @@ public class SwipeItemDisappearLayout extends ViewGroup {
                     int recoverValue = (int) moveValue;
                     state = STATE_RECOVER;
                     Log.e("SwipeDisappearLayout", "recoverValue:"+recoverValue);
-                    mScroller.startScroll(getScrollX(), 0 ,recoverValue , 0, 800);
+                    mScroller.startScroll(getScrollX(), 0 ,recoverValue , 0, 1000);
                     invalidate();
                 }
-
+                getParent().requestDisallowInterceptTouchEvent(false);
             }break;
-            case MotionEvent.ACTION_CANCEL:
-                mActivePointerId = INVALID_POINTER;
+
         }
-        return true;
+        return super.onTouchEvent(ev);
     }
 
 
@@ -278,13 +264,16 @@ public class SwipeItemDisappearLayout extends ViewGroup {
         if(0 != ( state& STATE_DISAPPEAR_COMPLETED))
             return;
         state = STATE_DISAPPEAR;
-        mScroller.startScroll(getScrollX(),0 , getMeasuredWidth(), 0, 600);
+        if(null != onDisapperListener)
+            onDisapperListener.onStarted();
+        mScroller.startScroll(getScrollX(),0 , getMeasuredWidth(), 0, 1500);
         invalidate();
     }
 
 
     public interface OnDisapperListener
     {
+        void onStarted();
         void onDisppeared();
     }
 
