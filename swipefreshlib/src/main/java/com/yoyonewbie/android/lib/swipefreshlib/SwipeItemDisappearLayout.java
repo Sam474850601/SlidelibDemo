@@ -3,34 +3,52 @@ package com.yoyonewbie.android.lib.swipefreshlib;
 import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateInterpolator;
-import android.view.animation.DecelerateInterpolator;
-
-
-import java.lang.ref.WeakReference;
+import android.widget.Scroller;
 
 /**
- * The list slide option disappears from the container
+ * A layout that can be removed  when user swipe-left to operate it
  * @author Sam
  */
+
 public class SwipeItemDisappearLayout extends ViewGroup {
-    private final static String LOG_TAG = SwipeItemDisappearLayout.class.getSimpleName();
+
+    Scroller mScroller;
+    private   final  static int INVALID_POINTER = -1;
+    int mActivePointerId;
+    int pointerIndex;
+    float  mInitialDownX;
+    float moveValue;
+    private  OnDisapperListener onDisapperListener;
+    private OnRecoveriedListener onRecoveriedListener;
+    private  final static int STATE_NORMAL = 1;
+    private  final static int STATE_DISAPPEAR = 0x2;
+    private  final static int STATE_DISAPPEAR_COMPLETED = 0x4;
+    private  final static int STATE_RECOVER = 3;
+    private int  state = STATE_NORMAL;
+    private ValueAnimator disappearAnimator;
     int mWith;
+
     int mHeight;
-    public SwipeItemDisappearLayout(Context context, AttributeSet attrs) {
-        super(context, attrs);
 
-    }
-
-    View mTarget;
     int paddingLeft;
     int paddingRight;
-    boolean isFirstonMeasure= true;
+    boolean repeat = true;
+
+    View mTargetView;
+    public SwipeItemDisappearLayout(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mScroller = new Scroller(context);
+    }
+
+
+
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -40,373 +58,253 @@ public class SwipeItemDisappearLayout extends ViewGroup {
 
         if(1 != getChildCount())
             throw new  RuntimeException("There can be only one child view or layout!");
-        mTarget = getChildAt(0);
-        mTarget.measure(MeasureSpec.makeMeasureSpec(
+        mTargetView = getChildAt(0);
+        mTargetView.measure(MeasureSpec.makeMeasureSpec(
                 getMeasuredWidth() - getPaddingLeft() - getPaddingRight(),
                 MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(
                 0,  MeasureSpec.UNSPECIFIED));
-        if(isFirstonMeasure)
+        if(STATE_NORMAL == state)
         {
-            isFirstonMeasure = false;
-            mHeight = mTarget.getMeasuredHeight()+getPaddingTop()+getPaddingBottom();
+            mHeight = mTargetView.getMeasuredHeight()+getPaddingTop()+getPaddingBottom();
         }
         setMeasuredDimension(mWith, mHeight);
     }
 
-
-    public int  getMyHeight()
-    {
-        return  mTarget.getMeasuredHeight()+getPaddingTop()+getPaddingBottom();
-    }
-
-
     @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+    protected void onLayout(boolean b, int i, int i1, int i2, int i3) {
         final int childLeft = getPaddingLeft();
         final int childTop = getPaddingTop();
         final int childWidth = mWith - getPaddingLeft() - getPaddingRight();
-        final int childHeight = mTarget.getMeasuredHeight();
-        mTarget.layout(childLeft+scrollX, childTop, childLeft + childWidth+scrollX,childTop +childHeight );
+        final int childHeight = mTargetView.getMeasuredHeight();
+        mTargetView.layout(childLeft, childTop, childLeft + childWidth,childTop +childHeight );
+
     }
 
+    final ValueAnimator.AnimatorUpdateListener   updateListener =   new ValueAnimator.AnimatorUpdateListener() {
+        @Override
+        public void onAnimationUpdate(ValueAnimator valueAnimator) {
+            int value = (Integer) valueAnimator.getAnimatedValue();
+            _setHeight(value);
+        }
+    };
 
 
-    private boolean repeat = true;
-
-    /**
-     * If you don't want to show it when it  disappear, you can set value that is false
-     */
-    public void setRepeat(boolean repeat)
+    private void _setHeight(int height)
     {
-        this.repeat = repeat;
+        mHeight = height;
+        requestLayout();
     }
 
+    final  ValueAnimator.AnimatorListener animatorListener = new ValueAnimator.AnimatorListener()
+    {
 
+        @Override
+        public void onAnimationStart(Animator animator) {
 
-    private int scrollX;
+        }
 
-
-    @Override
-    public boolean onTouchEvent(MotionEvent ev) {
-        try {
-            switch (ev.getAction())
+        @Override
+        public void onAnimationEnd(Animator animator) {
+            if(null != onDisapperListener)
+                onDisapperListener.onDisppeared();
+            state |= STATE_DISAPPEAR_COMPLETED;
+            if(repeat)
             {
-                case MotionEvent.ACTION_DOWN:
-                {
-                    return true;
-                }
-                case MotionEvent.ACTION_MOVE:
-                {
-
-                    if(INVALID_POINTER == mActivePointerId)
-                    {
-                        Log.e(LOG_TAG, "Got ACTION_MOVE event but don't have an active pointer id.");
-                        return false;
-                    }
-                    pointerIndex = ev.findPointerIndex(mActivePointerId);
-                    if (pointerIndex < 0) {
-                        Log.e(LOG_TAG, "Got ACTION_MOVE event but have an invalid active pointer id.");
-                        return false;
-                    }
-                    scrollX = (int) ( ev.getX(pointerIndex) -downX);
-                    if(scrollX>0)
-                    {
-
-                        return false;
-                    }
-                    requestLayout();
-                    return true;
-                }
-                case MotionEvent.ACTION_CANCEL:
-                    mActivePointerId = INVALID_POINTER;
-                case MotionEvent.ACTION_UP:
-                {
-                    if(scrollX<0)
-                    {
-                        int  type = scrollX>-mWith/8?TYPE_RECOVERY:TYPE_DISAPPEAR;
-                        _startScrollXAnim(type, scrollX );
-                    }
-                }break;
+                recover();
             }
+            moveValue  = 0;
         }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
+
+        @Override
+        public void onAnimationCancel(Animator animator) {
+
         }
-        return super.onTouchEvent(ev);
+
+        @Override
+        public void onAnimationRepeat(Animator animator) {
+
+        }
+    };
+
+
+    private void _disappear()
+    {
+        if(isRunning())
+            return;
+        disappearAnimator = ValueAnimator.ofInt(mTargetView.getMeasuredHeight(), 0);
+        disappearAnimator.setDuration(300);
+        disappearAnimator.addUpdateListener(updateListener);
+        disappearAnimator.addListener(animatorListener);
+        disappearAnimator.start();
     }
 
-    int downX = 0;
-
-    int mActivePointerId;
-
-    int pointerIndex;
-
-
-    final static int INVALID_POINTER = -1;
+    public boolean isRunning()
+    {
+        return null != disappearAnimator && disappearAnimator.isRunning();
+    }
 
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-
+        if(isRunning())
+            return false;
         switch (ev.getAction())
         {
             case MotionEvent.ACTION_DOWN:
             {
-                scrollX = 0;
-                //SwipeRefreshLayout
                 mActivePointerId = ev.getPointerId(0);
-                pointerIndex = ev.findPointerIndex(mActivePointerId);
-                downX = (int) ev.getX(pointerIndex);
-                getParent().requestDisallowInterceptTouchEvent(true);
-                return false;
+                moveValue = 0;
             }
             case MotionEvent.ACTION_MOVE:
-            {
+                if(STATE_DISAPPEAR == state)
+                    return false ;
+                break;
+            case MotionEvent.ACTION_UP:break;
+            case MotionEvent.ACTION_CANCEL:
+                mActivePointerId = INVALID_POINTER;
+        }
+        return true;
+    }
 
-                if(INVALID_POINTER == mActivePointerId)
-                {
-                    Log.e(LOG_TAG, "Got ACTION_MOVE event but don't have an active pointer id.");
-                    return false;
-                }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        if(isRunning())
+            return false;
+        switch (ev.getAction())
+        {
+            case MotionEvent.ACTION_DOWN:
+            {
+                mActivePointerId = ev.getPointerId(0);
                 pointerIndex = ev.findPointerIndex(mActivePointerId);
                 if (pointerIndex < 0) {
                     return false;
                 }
-                boolean allowToMove =  downX - (int) ev.getX(pointerIndex)>0;
-                return allowToMove;
-            }
-            case MotionEvent.ACTION_CANCEL:
-                mActivePointerId = INVALID_POINTER;
+                mInitialDownX = ev.getX(pointerIndex);
+                moveValue = 0;
+            }break;
+            case MotionEvent.ACTION_MOVE:
+            {
+                if(STATE_DISAPPEAR == state)
+                    return false ;
+                if(INVALID_POINTER == mActivePointerId)
+                    return false;
+                pointerIndex = ev.findPointerIndex(mActivePointerId);
+                if (pointerIndex < 0) {
+                    Log.e("SwipeDisappearLayout", "Got ACTION_MOVE event but have an invalid active pointer id.");
+                    return false;
+                }
+                float currentX = ev.getX(pointerIndex);
+                float moveValue = currentX - mInitialDownX;
+                if(moveValue<0)
+                {
+                    moveValue = moveValue*0.4f;
+                    if(this.moveValue>moveValue)
+                    {
+                        this.moveValue = moveValue;
+                        if(!mScroller.isFinished())
+                            mScroller.forceFinished(true);
+                        scrollTo((int) -moveValue, 0);
+                    }
+                }
+            }break;
             case MotionEvent.ACTION_UP:
             {
+                if(isRunning())
+                    break;
+                Log.e("SwipeDisappearLayout", "ACTION_UP");
+
+                Log.e("SwipeDisappearLayout", "moveValue:"+moveValue);
+                if(moveValue<-getMeasuredWidth()/8f)
+                {
+
+                    Log.e("SwipeDisappearLayout", "disappear");
+                    state = STATE_DISAPPEAR;
+                    mScroller.startScroll(getScrollX(),0 , (int) (getMeasuredWidth()-Math.abs(moveValue)), 0, 600);
+                    invalidate();
+                }
+                else if(moveValue<0)
+                {
+                    int recoverValue = (int) moveValue;
+                    state = STATE_RECOVER;
+                    Log.e("SwipeDisappearLayout", "recoverValue:"+recoverValue);
+                    mScroller.startScroll(getScrollX(), 0 ,recoverValue , 0, 800);
+                    invalidate();
+                }
 
             }break;
-
+            case MotionEvent.ACTION_CANCEL:
+                mActivePointerId = INVALID_POINTER;
         }
-        return super.onInterceptTouchEvent(ev);
+        return true;
     }
 
-    private void _scrollBy(int x)
+
+    public void recover()
     {
-        this.scrollX = x;
+        scrollTo(0, 0);
+        state = STATE_NORMAL;
         requestLayout();
+        if(null != onRecoveriedListener)
+            onRecoveriedListener.onRecoveried();
     }
 
 
-    private ValueAnimator scrollAnimator;
 
-
-    final static int TYPE_DISAPPEAR = 1;
-
-    final static int TYPE_RECOVERY = 2;
-
-
-    private void _startScrollXAnim(int type, int scrollX)
-    {
-        if(_isAnimRunninng())
-            return;
-        WeakReference<SwipeItemDisappearLayout> swipeItemDisappearLayoutWeakReference =   new WeakReference<SwipeItemDisappearLayout>(this);
-        if(TYPE_RECOVERY == type)
+    @Override
+    public void computeScroll() {
+        if(mScroller.computeScrollOffset())
         {
-            scrollAnimator = ValueAnimator.ofInt(scrollX, 0);
-            scrollAnimator.setInterpolator(new DecelerateInterpolator(2f));
-            scrollAnimator.setDuration(1500);
+            scrollTo(mScroller.getCurrX(), 0);
+            invalidate();
         }
-        else if  (TYPE_DISAPPEAR == type)
+        else if(STATE_RECOVER == state)
         {
-            scrollAnimator = ValueAnimator.ofInt(scrollX, -mWith);
-            scrollAnimator.setInterpolator(new AccelerateInterpolator());
-            scrollAnimator.setDuration(300);
+            if(null != onRecoveriedListener)
+                onRecoveriedListener.onRecoveried();
+            state = STATE_NORMAL;
+            moveValue= 0;
+
         }
-        if(null  == scrollAnimator)
-            return;
-        scrollAnimator.addListener(new ScrollAnimListener(type, swipeItemDisappearLayoutWeakReference));
-        scrollAnimator.addUpdateListener(new ScrollValueAnimatorUpdateListener(swipeItemDisappearLayoutWeakReference));
-        scrollAnimator.start();
-    }
-
-
-    private static  class ScrollValueAnimatorUpdateListener  implements ValueAnimator.AnimatorUpdateListener
-    {
-        WeakReference<SwipeItemDisappearLayout> swipeItemDisappearLayoutWeakReference;
-        private  ScrollValueAnimatorUpdateListener(WeakReference<SwipeItemDisappearLayout> swipeItemDisappearLayoutWeakReference)
+        else if(STATE_DISAPPEAR == state && (0 ==( state& STATE_DISAPPEAR_COMPLETED)))
         {
-            this.swipeItemDisappearLayoutWeakReference = swipeItemDisappearLayoutWeakReference;
+            _disappear();
         }
-
-        @Override
-        public void onAnimationUpdate(ValueAnimator animation) {
-            if(null != swipeItemDisappearLayoutWeakReference)
-            {
-                SwipeItemDisappearLayout swipeItemDisappearLayout =  swipeItemDisappearLayoutWeakReference.get();
-                if(null != swipeItemDisappearLayout)
-                {
-                    swipeItemDisappearLayout._scrollBy((Integer) animation.getAnimatedValue());
-                }
-            }
-        }
-    }
-
-    private static  class  DisappearValueAnimatorUpdateListener implements ValueAnimator.AnimatorUpdateListener
-    {
-        WeakReference<SwipeItemDisappearLayout> swipeItemDisappearLayoutWeakReference;
-        private DisappearValueAnimatorUpdateListener (WeakReference<SwipeItemDisappearLayout> swipeItemDisappearLayoutWeakReference)
-        {
-            this.swipeItemDisappearLayoutWeakReference = swipeItemDisappearLayoutWeakReference;
-        }
-        @Override
-        public void onAnimationUpdate(ValueAnimator animation) {
-            if(null != swipeItemDisappearLayoutWeakReference)
-            {
-                SwipeItemDisappearLayout layout =  swipeItemDisappearLayoutWeakReference.get();
-                if(null != layout)
-                {
-                    layout._disappearHeight((Integer) animation.getAnimatedValue());
-                }
-            }
-        }
-    }
-
-    private void _disappearHeight(int height)
-    {
-        mHeight = height;
-        requestLayout();
-
-    }
-
-
-
-
-    //if anim is running
-    private boolean _isAnimRunninng()
-    {
-        return null != scrollAnimator && scrollAnimator.isRunning();
-    }
-
-
-    private class ScrollAnimListener implements Animator.AnimatorListener {
-        WeakReference<SwipeItemDisappearLayout> swipeItemDisappearLayoutWeakReferenc;
-        int type;
-        public ScrollAnimListener(int type, WeakReference<SwipeItemDisappearLayout> swipeItemDisappearLayoutWeakReference) {
-            this.swipeItemDisappearLayoutWeakReferenc = swipeItemDisappearLayoutWeakReference;
-            this.type =type;
-        }
-
-        @Override
-        public void onAnimationStart(Animator animation) {
-
-        }
-
-        private ValueAnimator disappearValueAnimato;
-        @Override
-        public void onAnimationEnd(Animator animation) {
-            if(TYPE_RECOVERY == type)
-            {
-                if(null != swipeItemDisappearLayoutWeakReferenc)
-                    swipeItemDisappearLayoutWeakReferenc.clear();
-            }
-            else  if(TYPE_DISAPPEAR == type)
-            {
-                if(null != swipeItemDisappearLayoutWeakReferenc)
-                {
-                    SwipeItemDisappearLayout layout =  swipeItemDisappearLayoutWeakReferenc.get();
-                    if(null != layout)
-                    {
-                        disappearValueAnimato = ValueAnimator.ofInt(layout.mHeight, 0);
-                        disappearValueAnimato.setDuration(500);
-                        disappearValueAnimato.addUpdateListener(new DisappearValueAnimatorUpdateListener(swipeItemDisappearLayoutWeakReferenc));
-                        disappearValueAnimato.addListener(new DisappearAnimatorListener(swipeItemDisappearLayoutWeakReferenc));
-                        disappearValueAnimato.start();
-                    }
-                }
-            }
-
-        }
-
-
-
-        @Override
-        public void onAnimationCancel(Animator animation) {
-
-        }
-
-        @Override
-        public void onAnimationRepeat(Animator animation) {
-
-        }
-    }
-
-
-    private static class  DisappearAnimatorListener implements Animator.AnimatorListener
-    {
-        WeakReference<SwipeItemDisappearLayout> swipeItemDisappearLayoutWeakReferenc;
-        public DisappearAnimatorListener(WeakReference<SwipeItemDisappearLayout> swipeItemDisappearLayoutWeakReferenc) {
-            this.swipeItemDisappearLayoutWeakReferenc = swipeItemDisappearLayoutWeakReferenc;
-        }
-
-        @Override
-        public void onAnimationStart(Animator animation) {
-
-        }
-
-        @Override
-        public void onAnimationEnd(Animator animation) {
-            if(null != swipeItemDisappearLayoutWeakReferenc)
-            {
-                SwipeItemDisappearLayout swipeItemDisappearLayout =   swipeItemDisappearLayoutWeakReferenc.get();
-                if(null != swipeItemDisappearLayout)
-                {
-                    OnDismissLinstener onDismissLinstener = swipeItemDisappearLayout.onDismissLinstener;
-                    if(null != onDismissLinstener)
-                    {
-                        onDismissLinstener.onDismiss();
-                        if(swipeItemDisappearLayout.repeat)
-                        {
-                            swipeItemDisappearLayout.restore();
-                        }
-                    }
-                    swipeItemDisappearLayoutWeakReferenc.clear();
-                }
-            }
-        }
-
-        @Override
-        public void onAnimationCancel(Animator animation) {
-
-        }
-
-        @Override
-        public void onAnimationRepeat(Animator animation) {
-
-        }
-    }
-
-    /**
-     * Restore it  to display view
-     */
-    public  void restore()
-    {
-        _scrollBy(0);
-        _disappearHeight(getMyHeight());
     }
 
     public void disappear()
     {
-        if(!_isAnimRunninng())
-        {
-            _startScrollXAnim(TYPE_DISAPPEAR, 0 );
-        }
+
+        if(0 != ( state& STATE_DISAPPEAR_COMPLETED))
+            return;
+        state = STATE_DISAPPEAR;
+        mScroller.startScroll(getScrollX(),0 , getMeasuredWidth(), 0, 600);
+        invalidate();
     }
 
-    private OnDismissLinstener onDismissLinstener;
 
-    public void setOnDismissLinstener(OnDismissLinstener onDismissLinstener) {
-        this.onDismissLinstener = onDismissLinstener;
-    }
-
-    public interface OnDismissLinstener
+    public interface OnDisapperListener
     {
-        void onDismiss();
+        void onDisppeared();
     }
 
+
+    public interface OnRecoveriedListener
+    {
+        void onRecoveried();
+    }
+
+    public void setOnDisapperListener(OnDisapperListener onDisapperListener) {
+        this.onDisapperListener = onDisapperListener;
+    }
+
+
+    public void setOnRecoveriedListener(OnRecoveriedListener onRecoveriedListener) {
+        this.onRecoveriedListener = onRecoveriedListener;
+    }
+
+    public void setRepeat(boolean repeat)
+    {
+        this.repeat = repeat;
+    }
 }
