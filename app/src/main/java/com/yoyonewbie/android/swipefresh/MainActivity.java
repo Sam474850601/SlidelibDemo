@@ -17,6 +17,7 @@ public class MainActivity extends AppCompatActivity {
 
        SwipeItemDisappearLayout swipeRefreshLayout = (SwipeItemDisappearLayout) findViewById(R.id.swipeDismissItem);
         swipeRefreshLayout.setRepeat(true);
+        swipeRefreshLayout.setDisappearOutDuration(500);
         swipeRefreshLayout.setOnDisapperListener(new SwipeItemDisappearLayout.OnDisapperListener() {
             @Override
             public void onStarted() {

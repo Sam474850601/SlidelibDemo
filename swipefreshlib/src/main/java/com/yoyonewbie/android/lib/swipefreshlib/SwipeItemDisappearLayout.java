@@ -3,12 +3,12 @@ package com.yoyonewbie.android.lib.swipefreshlib;
 import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.content.Context;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Scroller;
 
@@ -28,6 +28,7 @@ public class SwipeItemDisappearLayout extends ViewGroup {
     float moveValue;
     private OnDisapperListener onDisapperListener;
     private OnRecoveriedListener onRecoveriedListener;
+    private ValueAnimator scroollOutTheLayoutValueAnimator;
     private final static int STATE_NORMAL = 1;
     private final static int STATE_DISAPPEAR = 0x2;
     private final static int STATE_DISAPPEAR_COMPLETED = 0x4;
@@ -70,15 +71,71 @@ public class SwipeItemDisappearLayout extends ViewGroup {
         setMeasuredDimension(mWith, mHeight);
     }
 
+    private int scrollerLeft;
+
     @Override
     protected void onLayout(boolean b, int i, int i1, int i2, int i3) {
         final int childLeft = getPaddingLeft();
         final int childTop = getPaddingTop();
         final int childWidth = mWith - getPaddingLeft() - getPaddingRight();
         final int childHeight = mTargetView.getMeasuredHeight();
-        mTargetView.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
+        mTargetView.layout(childLeft + scrollerLeft, childTop, scrollerLeft + childLeft + childWidth, childTop + childHeight);
 
     }
+
+    Animator.AnimatorListener scroollOutTheLayoutAnimatorListener = new Animator.AnimatorListener() {
+        @Override
+        public void onAnimationStart(Animator animation) {
+            scrollTo(0, 0);
+        }
+
+        @Override
+        public void onAnimationEnd(Animator animation) {
+            _disappear();
+        }
+
+        @Override
+        public void onAnimationCancel(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationRepeat(Animator animation) {
+
+        }
+    };
+
+
+    ValueAnimator.AnimatorUpdateListener scroollOutTheLayoutAnimatorUpdateListener = new ValueAnimator.AnimatorUpdateListener() {
+        @Override
+        public void onAnimationUpdate(ValueAnimator animation) {
+            scrollerLeft = (int) animation.getAnimatedValue();
+            requestLayout();
+        }
+    };
+
+    private int scrollOutDuration = 500;
+
+    public void setScrollOutDuration(int duration) {
+        this.scrollOutDuration = duration;
+    }
+
+    private int disappearOutDuration = 200;
+
+    public void setDisappearOutDuration(int duration) {
+        this.disappearOutDuration = duration;
+    }
+
+
+    private void _scrollOutTheLayout(int scrollValue) {
+        scroollOutTheLayoutValueAnimator = ValueAnimator.ofInt(scrollValue, -getMeasuredWidth());
+        scroollOutTheLayoutValueAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
+        scroollOutTheLayoutValueAnimator.setDuration(scrollOutDuration);
+        scroollOutTheLayoutValueAnimator.addUpdateListener(scroollOutTheLayoutAnimatorUpdateListener);
+        scroollOutTheLayoutValueAnimator.addListener(scroollOutTheLayoutAnimatorListener);
+        scroollOutTheLayoutValueAnimator.start();
+    }
+
 
     final ValueAnimator.AnimatorUpdateListener updateListener = new ValueAnimator.AnimatorUpdateListener() {
         @Override
@@ -98,7 +155,6 @@ public class SwipeItemDisappearLayout extends ViewGroup {
 
         @Override
         public void onAnimationStart(Animator animator) {
-
         }
 
         @Override
@@ -127,10 +183,9 @@ public class SwipeItemDisappearLayout extends ViewGroup {
     private void _disappear() {
         if (isRunning())
             return;
-        if(null  == disappearAnimator)
-        {
+        if (null == disappearAnimator) {
             disappearAnimator = ValueAnimator.ofInt(mTargetView.getMeasuredHeight(), 0);
-            disappearAnimator.setDuration(300);
+            disappearAnimator.setDuration(disappearOutDuration);
             disappearAnimator.addUpdateListener(updateListener);
             disappearAnimator.addListener(animatorListener);
             disappearAnimator.setInterpolator(new LinearInterpolator());
@@ -139,7 +194,7 @@ public class SwipeItemDisappearLayout extends ViewGroup {
     }
 
     public boolean isRunning() {
-        return null != disappearAnimator && disappearAnimator.isRunning();
+        return null != disappearAnimator && disappearAnimator.isRunning() || (null != scroollOutTheLayoutValueAnimator && scroollOutTheLayoutValueAnimator.isRunning());
     }
 
 
@@ -191,14 +246,15 @@ public class SwipeItemDisappearLayout extends ViewGroup {
                 Log.e("SwipeDisappearLayout", "ACTION_UP");
 
                 Log.e("SwipeDisappearLayout", "moveValue:" + moveValue);
-                if (moveValue < -getMeasuredWidth() / 10f) {
+                if (moveValue < -getMeasuredWidth() / 8f) {
 
                     Log.e("SwipeDisappearLayout", "disappear");
                     state = STATE_DISAPPEAR;
                     if (null != onDisapperListener)
                         onDisapperListener.onStarted();
-                    mScroller.startScroll(getScrollX(), 0, (int) (getMeasuredWidth() - Math.abs(moveValue)), 0, 1300);
-                    invalidate();
+//                    mScroller.startScroll(getScrollX(), 0, (int) (getMeasuredWidth() - Math.abs(moveValue)), 0, 1300);
+//                    invalidate();
+                    _scrollOutTheLayout((int) moveValue);
                 } else if (moveValue < 0) {
                     int recoverValue = (int) moveValue;
                     state = STATE_RECOVER;
@@ -216,9 +272,10 @@ public class SwipeItemDisappearLayout extends ViewGroup {
 
 
     public void recover() {
-        scrollTo(0, 0);
         state = STATE_NORMAL;
+        scrollerLeft = 0;
         requestLayout();
+        scrollTo(0, 0);
         if (null != onRecoveriedListener)
             onRecoveriedListener.onRecoveried();
     }
@@ -247,14 +304,16 @@ public class SwipeItemDisappearLayout extends ViewGroup {
     }
 
     public void disappear() {
-
+        if (isRunning())
+            return;
         if (0 != (state & STATE_DISAPPEAR_COMPLETED))
             return;
         state = STATE_DISAPPEAR;
         if (null != onDisapperListener)
             onDisapperListener.onStarted();
-        mScroller.startScroll(getScrollX(), 0, getMeasuredWidth(), 0, 1300);
-        invalidate();
+//        mScroller.startScroll(getScrollX(), 0, getMeasuredWidth(), 0, 1300);
+//        invalidate();
+        _scrollOutTheLayout((int) moveValue);
     }
 
 
@@ -281,4 +340,6 @@ public class SwipeItemDisappearLayout extends ViewGroup {
     public void setRepeat(boolean repeat) {
         this.repeat = repeat;
     }
+
+
 }
