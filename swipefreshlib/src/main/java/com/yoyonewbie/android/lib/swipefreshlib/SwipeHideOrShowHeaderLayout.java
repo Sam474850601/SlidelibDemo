@@ -29,6 +29,7 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
     View headerView;
     View mTarget;
     int headerViewHeight;
+    int hideContentHeight;
 
     Rect allowSwpieRect = new Rect();
 
@@ -125,6 +126,7 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
             measureChild(mTarget, childViewWidthMeasureSpec, childViewHeightMeasureSpec);
         }
 
+        hideContentHeight  = headerViewHeight - suspendedAreaHeight;
     }
 
     @Override
@@ -146,10 +148,10 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
     int pointerIndex;
     int downY;
 
-    int FLAG_PROCESSD = 0X2;
-    int FLAG_FIRST_PROCESSD = 0X4;
-    int FLAG_HIDE = 0X8;
-    int FLAG_SHOW = 0X10;
+    int FLAG_PROCESSD =2;
+//    int FLAG_FIRST_PROCESSD = 0X4;
+//    int FLAG_HIDE = 0X8;
+//    int FLAG_SHOW = 0X10;
     int flag = 0;
 
 
@@ -158,7 +160,7 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (_isAnimRunning()) {
+        if (_isAnimRunning()||0==hideContentHeight) {
             return super.dispatchTouchEvent(ev);
         }
 
@@ -226,7 +228,14 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
-        return super.dispatchTouchEvent(ev);
+       boolean isProcess =  true;
+        try {
+            super.dispatchTouchEvent(ev);
+        }
+        catch (Exception ex)
+        {
+        }
+        return isProcess;
     }
 
     @Override

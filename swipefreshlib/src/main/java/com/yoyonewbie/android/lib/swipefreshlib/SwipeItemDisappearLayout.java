@@ -243,12 +243,8 @@ public class SwipeItemDisappearLayout extends ViewGroup {
             case MotionEvent.ACTION_UP: {
                 if (isRunning())
                     break;
-                Log.e("SwipeDisappearLayout", "ACTION_UP");
-
-                Log.e("SwipeDisappearLayout", "moveValue:" + moveValue);
                 if (moveValue < -getMeasuredWidth() / 8f) {
 
-                    Log.e("SwipeDisappearLayout", "disappear");
                     state = STATE_DISAPPEAR;
                     if (null != onDisapperListener)
                         onDisapperListener.onStarted();
@@ -258,11 +254,17 @@ public class SwipeItemDisappearLayout extends ViewGroup {
                 } else if (moveValue < 0) {
                     int recoverValue = (int) moveValue;
                     state = STATE_RECOVER;
-                    Log.e("SwipeDisappearLayout", "recoverValue:" + recoverValue);
                     mScroller.startScroll(getScrollX(), 0, recoverValue, 0, 1200);
                     invalidate();
                 }
-                getParent().requestDisallowInterceptTouchEvent(false);
+                try {
+                    getParent().requestDisallowInterceptTouchEvent(false);
+                }
+                catch (Exception ex)
+                {
+
+                }
+
             }
             break;
 
