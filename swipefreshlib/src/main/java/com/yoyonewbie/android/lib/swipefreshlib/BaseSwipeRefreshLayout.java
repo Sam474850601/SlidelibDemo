@@ -462,7 +462,6 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                         }
                         else
                         {
-
                             _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_NOT_ENOUNGH_PULL_READY_TO_RELEASE, headerMarinTop);
                         }
 
@@ -473,8 +472,9 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
             }
         }
         catch (IllegalArgumentException ex)
-        {
-            ex.printStackTrace();
+       {
+            _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_NOT_ENOUNGH_PULL_READY_TO_RELEASE, headerMarinTop);
+            return true;
         }
         return super.onTouchEvent(event);
     }
@@ -694,7 +694,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
             return super.onInterceptTouchEvent(event);
         }catch (IllegalArgumentException ex)
         {
-
+            _startMovingAnim(BackMovingAnimatorListener.TYPE_PULLDOWN_NOT_ENOUNGH_PULL_READY_TO_RELEASE, headerMarinTop);
         }
         return false;
     }
