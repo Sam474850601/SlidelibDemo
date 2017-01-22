@@ -383,6 +383,14 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
     boolean scrollerIsFinished = true;
 
+    final static int OPERATION_SWIPE_DOWN = 1;
+
+    final static int OPERATION_SWIPE_UP = 2;
+
+    final static int OPERATION_SWIPE_NORMEL = 0;
+
+    int operation =  OPERATION_SWIPE_NORMEL;
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         try {
@@ -405,8 +413,9 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
                     int currentMoveY = (int) (event.getY(mActivePointerId) - downY);
 
-                    if(currentMoveY>0 && scrollerIsFinished)
+                    if(currentMoveY>0 && scrollerIsFinished &&(OPERATION_SWIPE_NORMEL == operation || OPERATION_SWIPE_DOWN == operation )  )
                     {
+                        operation = OPERATION_SWIPE_DOWN;
                          if( (enableSwipeDown && 0 != (mFlag&FLAG_FRESHING_NO_COMPLETION) &&!_isAnimRunning())||(enableSwipeDown && 0 == (mFlag&FLAG_PULL_DOWN_RELEASE)  && ((mFlag & FLAG_PULL_DOWN_DRAGGING)!= 0 || (FLAG_PULL_DOWN_READY_RELEASE &mFlag) !=0)&&!_isAnimRunning()  ))
                         {
 
@@ -418,13 +427,13 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                             move(realMoving);
                         }
                     }
-                    else if(enableSwipeUp())
+                    else if(enableSwipeUp() && currentMoveY+LIMITE_MOVING_Y_MIN<=0)
                     {
                         if (currentMoveY > moveY2) {
                             break;
                         }
+                        operation = OPERATION_SWIPE_UP;
                         moveY2 = currentMoveY;
-                        Log.e("isChildResumeNoEvent",isChildResumeNoEvent+" isChildResumeNoEvent" );
                         if(!isChildResumeNoEvent)
                             moveY2= moveY2+LIMITE_MOVING_Y_MIN;
                         if(!mScroller.isFinished())
@@ -435,6 +444,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                         scrollTo(0, -moveY2);
                         invalidate();
                     }
+
                 }
                 break;
                 case MotionEvent.ACTION_CANCEL:
@@ -442,10 +452,10 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                     int scrollY = getScrollY();
                     if(scrollY>0 &&moveY2<0)
                     {
-                        _log("moveY2", moveY2);
-                        mScroller.startScroll(0, getScrollY(), 0, moveY2, 800);
+                        mScroller.startScroll(0, scrollY, 0, moveY2, 800);
                         invalidate();
                     }
+                    moveY2 = 0;
                     int realMoving = _getRealYMoving(moveY);
 
                     if(realMoving>0)
@@ -466,7 +476,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                         }
 
                     }
-
+                    operation = OPERATION_SWIPE_NORMEL;
                 }
                 break;
             }
