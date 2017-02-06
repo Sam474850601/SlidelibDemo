@@ -110,22 +110,18 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
             throw new RuntimeException("There must be 2 childViews(layout)!");
         headerView = getChildAt(0);
         mTarget = getChildAt(1);
+
+        int headerViewWidthMeasureSpec = MeasureSpec.makeMeasureSpec(mWith - paddingLeft - paddingRight, MeasureSpec.EXACTLY);
+        int headerViewViewHeightMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        headerView.measure(headerViewWidthMeasureSpec, headerViewViewHeightMeasureSpec);
         if (headerView instanceof ViewGroup && suspendedAreaId > 0) {
             View suspendedView = headerView.findViewById(suspendedAreaId);
             suspendedAreaHeight = suspendedView.getMeasuredHeight();
         }
-        int childViewWidthMeasureSpec = MeasureSpec.makeMeasureSpec(mWith - paddingLeft - paddingRight, MeasureSpec.EXACTLY);
-        int childViewHeightMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
-        measureChild(headerView, childViewWidthMeasureSpec, childViewHeightMeasureSpec);
         headerViewHeight = headerView.getMeasuredHeight();
-        measureChild(mTarget, childViewWidthMeasureSpec, childViewHeightMeasureSpec);
-        int convertHeight = mTarget.getMeasuredHeight();
-
-        if (0 == convertHeight) {
-            childViewHeightMeasureSpec = MeasureSpec.makeMeasureSpec(mHeight - paddingTop - paddingBottom-suspendedAreaHeight, MeasureSpec.EXACTLY);
-            measureChild(mTarget, childViewWidthMeasureSpec, childViewHeightMeasureSpec);
-        }
-
+        int targetViewWithMeasureSpec =   MeasureSpec.makeMeasureSpec(mWith - paddingLeft - paddingRight, MeasureSpec.EXACTLY);
+        int targetViewHeightMeasureSpec =   MeasureSpec.makeMeasureSpec(mHeight - paddingTop - paddingBottom-suspendedAreaHeight, MeasureSpec.EXACTLY);
+        mTarget.measure(targetViewWithMeasureSpec, targetViewHeightMeasureSpec );
         hideContentHeight  = headerViewHeight - suspendedAreaHeight;
     }
 
@@ -137,7 +133,7 @@ public class SwipeHideOrShowHeaderLayout extends ViewGroup {
         int paddingBottom = getPaddingBottom();
         int headerShowHeight = headerViewHeight + paddingTop + scrollY;
         headerView.layout(paddingLeft, paddingTop + scrollY, headerView.getMeasuredWidth() - paddingRight, headerShowHeight);
-        mTarget.layout(paddingLeft, headerShowHeight, mTarget.getMeasuredWidth() - paddingRight, mHeight - paddingBottom);
+        mTarget.layout(paddingLeft, headerShowHeight, mWith- paddingRight, mHeight - paddingBottom);
     }
 
 

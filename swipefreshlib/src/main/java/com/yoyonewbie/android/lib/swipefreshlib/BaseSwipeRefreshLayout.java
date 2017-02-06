@@ -5,6 +5,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Rect;
 import android.os.Build;
+import android.os.Handler;
 import android.os.Parcelable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -32,6 +33,11 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
 
        String LOG_TAG = getClass().getSimpleName();
     private Scroller mScroller;
+
+    public final static int  FLAG_LODEMORE_NORMEL = 0x2;
+    public final static int  FLAG_LODEMORE_READY = 0x4;
+    public final static int  FLAG_LODEMORE_LOADING = 0x8;
+    private int  mLoadMoreFlag=FLAG_LODEMORE_NORMEL;
     /**
      * Provides a swipe-down header view
      */
@@ -58,6 +64,12 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
     }
 
     private  SwipeOperatableAdapter swipeOperatableAdapter;
+
+    private OnLoadMoreListener onLoadMoreListener;
+
+    public void setOnLoadMoreListener(OnLoadMoreListener onLoadMoreListener) {
+        this.onLoadMoreListener = onLoadMoreListener;
+    }
 
     public SwipeOperatableAdapter getSwipeOperatableAdapter() {
         return swipeOperatableAdapter;
@@ -432,6 +444,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                         if (currentMoveY > moveY2) {
                             break;
                         }
+
                         operation = OPERATION_SWIPE_UP;
                         moveY2 = currentMoveY;
                         if(!isChildResumeNoEvent)
@@ -452,6 +465,7 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
                     int scrollY = getScrollY();
                     if(scrollY>0 &&moveY2<0)
                     {
+                        mLoadMoreFlag |= FLAG_LODEMORE_READY;
                         mScroller.startScroll(0, scrollY, 0, moveY2, 800);
                         invalidate();
                     }
@@ -489,6 +503,9 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         return super.onTouchEvent(event);
     }
 
+    Handler handler=  new Handler();
+
+
     @Override
     public void computeScroll() {
         super.computeScroll();
@@ -497,7 +514,29 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
             scrollTo(mScroller.getCurrX(), mScroller.getCurrY());
             invalidate();
         }
+
+        if(0 == (mLoadMoreFlag&FLAG_LODEMORE_LOADING)&&0 != (mLoadMoreFlag&FLAG_LODEMORE_READY)&&mScroller.isFinished() )
+        {
+            mLoadMoreFlag |= FLAG_LODEMORE_LOADING;
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if(null != onLoadMoreListener)
+                        onLoadMoreListener.loadMore();
+                }
+            });
+        }
     }
+
+
+
+
+    public interface OnLoadMoreListener
+    {
+        void loadMore();
+    }
+
+
 
     private boolean _isAnimRunning()
     {
@@ -729,6 +768,11 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         }
     }
 
+    public void freshingLoadMoreCompleted()
+    {
+        mLoadMoreFlag = FLAG_LODEMORE_NORMEL;
+    }
+
     public interface  OnRefreshListener
     {
         void onRefresh();
@@ -840,7 +884,10 @@ public abstract class BaseSwipeRefreshLayout extends ViewGroup {
         return 0!=(mFlag&FLAG_PULL_DOWN_RELEASE);
     }
 
-
+    public boolean isLoadMoreRefreshing()
+    {
+        return 0!=(mLoadMoreFlag&FLAG_LODEMORE_LOADING);
+    }
 
 
 }
